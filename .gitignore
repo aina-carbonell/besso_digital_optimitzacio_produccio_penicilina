@@ -1,5 +1,6 @@
 # Ignorar fitxers CSV grans
 data/100_Batches_IndPenSim_V3.csv
+data/100_Batches_IndPenSim_Statistics.csv
 data/*.csv
 *.csv
 
