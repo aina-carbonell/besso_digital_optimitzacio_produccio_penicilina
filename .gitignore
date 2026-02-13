@@ -1,0 +1,33 @@
+# Ignorar fitxers CSV grans
+data/100_Batches_IndPenSim_V3.csv
+data/*.csv
+*.csv
+
+# Ignorar fitxers de dades grans
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.mat
+*.h5
+*.hdf5
+
+# Ignorar fitxers temporals i de sistema
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Ignorar fitxers d'entorn i cache
+__pycache__/
+*.pyc
+.env
+.venv
+venv/
+env/
+.vscode/
+.idea/

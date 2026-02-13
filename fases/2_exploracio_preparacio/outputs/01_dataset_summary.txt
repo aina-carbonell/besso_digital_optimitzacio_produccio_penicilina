@@ -1,0 +1,29 @@
+================================================================================
+RESUM DE L'ANÀLISI EXPLORATÒRIA
+Dataset IndPenSim - Producció de Penicil·lina
+================================================================================
+
+📊 Dimensions del dataset: 113,935 files × 2,239 columnes
+💾 Memòria utilitzada: 1946.26 MB
+
+📋 Variables de procés: 39
+📊 Columnes d'espectroscòpia Raman: 2200
+
+📦 Nombre total de batches: 47361
+📊 Mostres per batch (mitjana): 2
+⏱️  Durada mitjana per batch: 17.0 hores
+
+🔍 Variables clau identificades:
+   • Temps: Time (h)
+   • Substrat: Substrate concentration(S:g/L)
+   • Oxigen Dissolt: Dissolved oxygen concentration(DO2:mg/L)
+   • Penicil·lina: Penicillin concentration(P:g/L)
+   • Volumen: Vessel Volume(V:L)
+   • pH: pH(pH:pH)
+   • Temperatura: Temperature(T:K)
+   • Agitació: Agitator RPM(RPM:RPM)
+   • Aeració: Aeration rate(Fg:L/h)
+   • OUR: Oxygen Uptake Rate(OUR:(g min^{-1}))
+   • CER: Carbon evolution rate(CER:g/h)
+
+================================================================================
