@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 ==================================================================================
-FASE 2: ANÀLISI DE CORRELACIÓ I SELECCIÓ DE CARACTERÍSTIQUES
-Identificació de les 9 variables més predictives per a penicil·lina
+FASE 2: CORRELACIO I SELECCIO - VERSIO COMPLETAMENT CORREGIDA
 ==================================================================================
 """
 
@@ -14,7 +14,15 @@ from pathlib import Path
 from scipy.stats import spearmanr
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import warnings
+import io
+import sys
 warnings.filterwarnings('ignore')
+
+# Force UTF-8
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+import matplotlib
+matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans']
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "fases" / "2_exploracio_preparacio" / "outputs"
@@ -24,97 +32,98 @@ plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
 print("=" * 80)
-print("FASE 2: ANÀLISI DE CORRELACIÓ I SELECCIÓ DE CARACTERÍSTIQUES")
+print("FASE 2: ANALISI DE CORRELACIO I SELECCIO")
 print("=" * 80)
 
-# Carregar dataset processat
-print("\n[1/4] Carregant dataset processat...")
+print("\n[1/4] Carregant dataset...")
 data_file = OUTPUT_DIR / "03_penicillin_dataset_33_columns.csv"
 
 if not data_file.exists():
-    print(f"❌ ERROR: Primer has d'executar 03_data_cleaning_and_feature_engineering.py")
+    print(f"ERROR: {data_file} no existeix")
+    print("Executa primer: 03_data_cleaning_and_feature_engineering.py")
     exit(1)
 
 df = pd.read_csv(data_file)
-print(f"✅ Dataset carregat: {len(df):,} files × {len(df.columns)} columnes")
+print(f"OK: {len(df):,} files x {len(df.columns)} columnes")
 
-# Eliminar columnes no numèriques
+# Numeric only
 numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 if 'batch_id' in numeric_cols:
     numeric_cols.remove('batch_id')
 
-df_numeric = df[numeric_cols].copy()
-print(f"   Variables numèriques: {len(numeric_cols)}")
+df_num = df[numeric_cols].copy()
+print(f"   Variables numeriques: {len(numeric_cols)}")
 
-# =============================================================================
-# ANÀLISI DE CORRELACIÓ
-# =============================================================================
-print("\n[2/4] Calculant correlacions amb penicil·lina...")
-
-if 'penicillin' not in df_numeric.columns:
-    print("❌ ERROR: La columna 'penicillin' no existeix al dataset")
+if 'penicillin' not in df_num.columns:
+    print("ERROR: No hi ha columna 'penicillin'")
     exit(1)
 
-# Correlació de Pearson
-corr_pearson = df_numeric.corr()['penicillin'].sort_values(ascending=False)
+# Neteja de NaN
+df_num = df_num.dropna(subset=['penicillin'])
+print(f"   Files valides: {len(df_num):,}")
 
-# Correlació de Spearman
-corr_spearman = {}
-for col in df_numeric.columns:
+# CORRELACIONS
+print("\n[2/4] Calculant correlacions...")
+
+corr_p = df_num.corr()['penicillin'].sort_values(ascending=False)
+
+corr_s = {}
+for col in df_num.columns:
     if col != 'penicillin':
-        corr, _ = spearmanr(df_numeric[col], df_numeric['penicillin'], nan_policy='omit')
-        corr_spearman[col] = corr
+        try:
+            c, _ = spearmanr(df_num[col].dropna(),
+                            df_num.loc[df_num[col].notna(), 'penicillin'],
+                            nan_policy='omit')
+            corr_s[col] = c if not np.isnan(c) else 0
+        except:
+            corr_s[col] = 0
 
-corr_spearman = pd.Series(corr_spearman).sort_values(ascending=False)
+corr_s_series = pd.Series(corr_s)
 
-# Crear DataFrame comparatiu
-df_correlations = pd.DataFrame({
-    'Variable': corr_pearson.index,
-    'Pearson': corr_pearson.values,
-    'Spearman': [corr_spearman.get(var, 0) for var in corr_pearson.index],
-    'Abs_Pearson': np.abs(corr_pearson.values)
+df_corr = pd.DataFrame({
+    'Variable': corr_p.index,
+    'Pearson': corr_p.values,
+    'Spearman': [corr_s.get(v, 0) for v in corr_p.index],
+    'Abs_Pearson': np.abs(corr_p.values)
 })
 
-df_correlations = df_correlations[df_correlations['Variable'] != 'penicillin']
-df_correlations = df_correlations.sort_values('Abs_Pearson', ascending=False)
+df_corr = df_corr[df_corr['Variable'] != 'penicillin']
+df_corr = df_corr.sort_values('Abs_Pearson', ascending=False)
 
-print(f"\n📊 Top 15 variables més correlacionades:")
-for idx, row in df_correlations.head(15).iterrows():
-    print(f"   {row['Variable']:30s}: Pearson={row['Pearson']:+.3f}, Spearman={row['Spearman']:+.3f}")
+print("\nTop 15 correlacions:")
+for _, row in df_corr.head(15).iterrows():
+    print(f"   {row['Variable']:30s}: P={row['Pearson']:+.3f}, S={row['Spearman']:+.3f}")
 
-# Guardar correlacions
+# Guardar
 corr_file = OUTPUT_DIR / "04_correlations_with_penicillin.csv"
-df_correlations.to_csv(corr_file, index=False)
-print(f"\n✅ Correlacions guardades: {corr_file.name}")
+df_corr.to_csv(corr_file, index=False, encoding='utf-8')
+print(f"\nOK: {corr_file.name}")
 
-# Visualització de correlacions
+# Grafics
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
 
-# Gràfic 1: Top 15 Pearson
-top_15 = df_correlations.head(15)
-colors = ['green' if x > 0 else 'red' for x in top_15['Pearson']]
+top15 = df_corr.head(15)
+colors = ['green' if x > 0 else 'red' for x in top15['Pearson']]
 
-ax1.barh(range(len(top_15)), top_15['Pearson'], color=colors, alpha=0.7, edgecolor='black')
-ax1.set_yticks(range(len(top_15)))
-ax1.set_yticklabels(top_15['Variable'])
-ax1.set_xlabel('Correlació de Pearson', fontsize=13)
-ax1.set_title('Top 15 Variables Correlacionades amb Penicil·lina (Pearson)', 
-              fontsize=14, fontweight='bold')
-ax1.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
+ax1.barh(range(len(top15)), top15['Pearson'], color=colors, alpha=0.7, edgecolor='black')
+ax1.set_yticks(range(len(top15)))
+ax1.set_yticklabels(top15['Variable'])
+ax1.set_xlabel('Correlacio Pearson')
+ax1.set_title('Top 15 Variables - Correlacio amb Penicil.lina', fontweight='bold')
+ax1.axvline(x=0, color='black', linewidth=0.8)
 ax1.grid(True, alpha=0.3, axis='x')
 
-# Gràfic 2: Pearson vs Spearman
-ax2.scatter(top_15['Pearson'], top_15['Spearman'], s=150, alpha=0.6, 
-           c=range(len(top_15)), cmap='viridis', edgecolors='black', linewidths=2)
+ax2.scatter(top15['Pearson'], top15['Spearman'], s=150, alpha=0.6,
+           c=range(len(top15)), cmap='viridis', edgecolors='black', linewidths=2)
 
-for i, var in enumerate(top_15['Variable']):
-    ax2.annotate(var, (top_15.iloc[i]['Pearson'], top_15.iloc[i]['Spearman']),
+for i, var in enumerate(top15['Variable']):
+    ax2.annotate(var, (top15.iloc[i]['Pearson'], top15.iloc[i]['Spearman']),
                 fontsize=9, ha='right', alpha=0.7)
 
 ax2.plot([-1, 1], [-1, 1], 'k--', alpha=0.3, linewidth=2)
-ax2.set_xlabel('Correlació de Pearson', fontsize=13)
-ax2.set_ylabel('Correlació de Spearman', fontsize=13)
-ax2.set_title('Comparació Pearson vs Spearman', fontsize=14, fontweight='bold')
+ax2.set_xlabel('Pearson')
+ax2.set_ylabel('Spearman')
+ax2.set_title('Pearson vs Spearman', fontweight='bold')
 ax2.grid(True, alpha=0.3)
 ax2.set_xlim(-1, 1)
 ax2.set_ylim(-1, 1)
@@ -123,136 +132,182 @@ plt.tight_layout()
 corr_plot = OUTPUT_DIR / "04_correlation_analysis.png"
 plt.savefig(corr_plot, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"✅ Gràfic de correlacions guardat: {corr_plot.name}")
+print(f"OK: {corr_plot.name}")
 
-# =============================================================================
-# SELECCIÓ DE TOP 9 CARACTERÍSTIQUES
-# =============================================================================
-print("\n[3/4] Seleccionant les 9 variables més predictives...")
+# SELECCIO TOP 9
+print("\n[3/4] Seleccionant Top 9...")
 
-# Algorisme greedy per minimitzar multicolinealitat (VIF)
-selected_features = []
-remaining_candidates = df_correlations.head(20)['Variable'].tolist()
+selected = []
+candidates = df_corr.head(20)['Variable'].tolist()
 
-print("\n   Selecció iterativa (minimitzant VIF):")
+print("\n   Seleccio iterativa:")
 
-for i in range(min(9, len(remaining_candidates))):
-    best_feature = None
-    min_max_vif = float('inf')
+for i in range(min(9, len(candidates))):
+    best = None
+    min_vif = float('inf')
     
-    for candidate in remaining_candidates:
-        test_features = selected_features + [candidate]
+    for cand in candidates:
+        test = selected + [cand]
+        X = df_num[test].dropna()
         
-        # Calcular VIF per aquesta combinació
-        X_test = df_numeric[test_features].dropna()
-        
-        if len(X_test) > len(test_features) and X_test.shape[1] > 1:
+        if len(X) > len(test) + 10 and X.shape[1] > 1:
             try:
-                vif_values = []
-                for j in range(X_test.shape[1]):
-                    vif = variance_inflation_factor(X_test.values, j)
-                    vif_values.append(vif)
+                vifs = []
+                for j in range(X.shape[1]):
+                    v = variance_inflation_factor(X.values, j)
+                    if not np.isnan(v) and not np.isinf(v):
+                        vifs.append(v)
                 
-                max_vif = max(vif_values)
-                
-                if max_vif < min_max_vif:
-                    min_max_vif = max_vif
-                    best_feature = candidate
+                if vifs:
+                    max_v = max(vifs)
+                    if max_v < min_vif:
+                        min_vif = max_v
+                        best = cand
             except:
-                # Si falla el càlcul de VIF, seleccionar per correlació
-                if best_feature is None:
-                    best_feature = candidate
+                if best is None:
+                    best = cand
+                    min_vif = 0
+        elif best is None:
+            best = cand
+            min_vif = 0
     
-    if best_feature:
-        selected_features.append(best_feature)
-        remaining_candidates.remove(best_feature)
-        corr_val = df_correlations[df_correlations['Variable'] == best_feature]['Pearson'].values[0]
-        print(f"      {i+1}. {best_feature:30s} (r={corr_val:+.3f}, VIF_max={min_max_vif:.2f})")
+    if best:
+        selected.append(best)
+        candidates.remove(best)
+        corr_val = df_corr[df_corr['Variable'] == best]['Pearson'].values[0]
+        print(f"      {i+1}. {best:30s} (r={corr_val:+.3f}, VIF={min_vif:.2f})")
 
-print(f"\n✅ {len(selected_features)} variables seleccionades!")
+print(f"\nOK: {len(selected)} variables")
 
-# Crear dataset reduït
-df_reduced = df[selected_features + ['penicillin', 'batch_id', 'time']].copy()
-reduced_file = OUTPUT_DIR / "04_penicillin_dataset_top9_features.csv"
-df_reduced.to_csv(reduced_file, index=False)
-print(f"   💾 Dataset reduït guardat: {reduced_file.name}")
+# Dataset reduit
+df_red = df[selected + ['penicillin', 'batch_id', 'time']].copy()
+red_file = OUTPUT_DIR / "04_penicillin_dataset_top9_features.csv"
+df_red.to_csv(red_file, index=False, encoding='utf-8')
+print(f"   Guardat: {red_file.name}")
 
-# =============================================================================
-# MATRIU DE CORRELACIÓ
-# =============================================================================
-print("\n[4/4] Generant matriu de correlació...")
+# MATRIU
+print("\n[4/4] Matriu de correlacio...")
 
-# Matriu per les 9 variables seleccionades
-corr_matrix = df_numeric[selected_features + ['penicillin']].corr()
+vars_matrix = [v for v in selected if v in df_num.columns]
+if 'penicillin' in df_num.columns:
+    vars_matrix.append('penicillin')
 
-plt.figure(figsize=(12, 10))
+if len(vars_matrix) > 1:
+    corr_mat = df_num[vars_matrix].corr()
+    
+    plt.figure(figsize=(12, 10))
+    mask = np.triu(np.ones_like(corr_mat, dtype=bool))
+    
+    sns.heatmap(corr_mat, mask=mask, annot=True, fmt='.2f', cmap='RdBu_r',
+                center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8},
+                vmin=-1, vmax=1)
+    
+    plt.title('Matriu Correlacio - Top 9 + Penicil.lina', fontsize=16, fontweight='bold', pad=20)
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.yticks(rotation=0, fontsize=10)
+    plt.tight_layout()
+    
+    mat_plot = OUTPUT_DIR / "04_correlation_matrix_top9.png"
+    plt.savefig(mat_plot, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"OK: {mat_plot.name}")
 
-mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-
-sns.heatmap(corr_matrix, mask=mask, annot=True, fmt='.2f', cmap='RdBu_r', 
-            center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8},
-            vmin=-1, vmax=1)
-
-plt.title('Matriu de Correlació - Top 9 Variables + Penicil·lina', 
-          fontsize=16, fontweight='bold', pad=20)
-plt.xticks(rotation=45, ha='right', fontsize=10)
-plt.yticks(rotation=0, fontsize=10)
-plt.tight_layout()
-
-matrix_plot = OUTPUT_DIR / "04_correlation_matrix_top9.png"
-plt.savefig(matrix_plot, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"✅ Matriu de correlació guardada: {matrix_plot.name}")
-
-# Guardar resum final
+# RESUM (amb encoding UTF-8 forçat)
 summary_file = OUTPUT_DIR / "04_selected_features_summary.txt"
-with open(summary_file, 'w', encoding='utf-8') as f:
-    f.write("=" * 80 + "\n")
-    f.write("RESUM DE SELECCIÓ DE CARACTERÍSTIQUES\n")
-    f.write("=" * 80 + "\n\n")
-    
-    f.write("🎯 9 VARIABLES SELECCIONADES PER PREDICCIÓ DE PENICIL·LINA:\n\n")
-    
-    for i, feat in enumerate(selected_features, 1):
-        corr = df_correlations[df_correlations['Variable'] == feat]['Pearson'].values[0]
-        f.write(f"   {i}. {feat:30s} (r = {corr:+.3f})\n")
-    
-    f.write("\n" + "=" * 80 + "\n")
-    f.write("\n📊 JUSTIFICACIÓ TEÒRICA:\n\n")
-    
-    justifications = {
-        'biomass': 'Directament relacionada amb producció (q_P · X)',
-        'time': 'Fase del procés (producció en fase estacionària)',
-        'substrate': 'Control de limitació per substrat',
-        'DO': 'Metabolisme aeròbic essencial',
-        'pH': 'Afecta activitat enzimàtica de biosíntesi',
-        'temperature': 'Afecta cinètica enzimàtica',
-        'volume': 'Estratègia fed-batch i dilució',
-        'specific_production_rate': 'Velocitat específica de biosíntesi',
-        'cumulative_penicillin': 'Producció acumulada total',
-        'yield_PX': 'Eficiència de conversió biomassa-producte',
-        'OUR': 'Indicador d\'activitat metabòlica',
-        'CER': 'Indicador d\'activitat metabòlica',
-        'RQ': 'Estat metabòlic del microorganisme'
-    }
-    
-    for feat in selected_features:
-        if feat in justifications:
-            f.write(f"   • {feat}: {justifications[feat]}\n")
-    
-    f.write("\n" + "=" * 80 + "\n")
 
-print(f"✅ Resum guardat: {summary_file.name}")
+just = {
+    'biomass': 'Relacionada amb produccio (qP * X)',
+    'time': 'Fase del proces',
+    'substrate': 'Control limitacio substrat',
+    'DO': 'Metabolisme aerobic',
+    'pH': 'Activitat enzimatica',
+    'temperature': 'Cinetica enzimatica',
+    'volume': 'Estrategia fed-batch',
+    'specific_production_rate': 'Velocitat biosintesi',
+    'cumulative_penicillin': 'Produccio acumulada',
+    'yield_PX': 'Eficiencia biomassa-producte',
+    'OUR': 'Activitat metabolica',
+    'CER': 'Activitat metabolica',
+    'RQ': 'Estat metabolic',
+    'kLa': 'Transferencia massa',
+    'penicillin_rate': 'Taxa produccio',
+    'biomass_rate': 'Taxa creixement',
+    'airflow': 'Subministrament oxigen',
+    'agitation': 'Homogeneitzacio',
+    'yield_PS': 'Eficiencia substrat-producte'
+}
+
+try:
+    with open(summary_file, 'w', encoding='utf-8', errors='replace') as f:
+        f.write("=" * 80 + "\n")
+        f.write("RESUM SELECCIO DE CARACTERISTIQUES\n")
+        f.write("=" * 80 + "\n\n")
+        f.write("9 VARIABLES SELECCIONADES:\n\n")
+        
+        for i, feat in enumerate(selected, 1):
+            corr = df_corr[df_corr['Variable'] == feat]['Pearson'].values[0]
+            f.write(f"   {i}. {feat:30s} (r = {corr:+.3f})\n")
+        
+        f.write("\n" + "=" * 80 + "\n")
+        f.write("\nJUSTIFICACIO TEORICA:\n\n")
+        
+        for feat in selected:
+            if feat in just:
+                f.write(f"   * {feat}: {just[feat]}\n")
+        
+        f.write("\n" + "=" * 80 + "\n")
+        f.write("\nESTADISTIQUES:\n\n")
+        
+        f.write("Correlacio positiva (>0.5):\n")
+        for feat in selected:
+            corr = df_corr[df_corr['Variable'] == feat]['Pearson'].values[0]
+            if corr > 0.5:
+                f.write(f"   * {feat}: r = {corr:.3f}\n")
+        
+        f.write("\nCorrelacio negativa (<-0.5):\n")
+        found = False
+        for feat in selected:
+            corr = df_corr[df_corr['Variable'] == feat]['Pearson'].values[0]
+            if corr < -0.5:
+                f.write(f"   * {feat}: r = {corr:.3f}\n")
+                found = True
+        if not found:
+            f.write("   (Cap)\n")
+        
+        f.write("\n" + "=" * 80 + "\n")
+    
+    print(f"OK: {summary_file.name}")
+    
+    # Verificar que el fitxer no està buit
+    if summary_file.stat().st_size > 0:
+        print(f"   Fitxer OK ({summary_file.stat().st_size} bytes)")
+    else:
+        print("   WARNING: Fitxer buit!")
+
+except Exception as e:
+    print(f"ERROR escrivint resum: {e}")
+    # Intent de fallback
+    try:
+        with open(summary_file, 'w', encoding='ascii', errors='replace') as f:
+            f.write("SELECTED FEATURES:\n\n")
+            for i, feat in enumerate(selected, 1):
+                corr = df_corr[df_corr['Variable'] == feat]['Pearson'].values[0]
+                f.write(f"{i}. {feat} (r = {corr:+.3f})\n")
+        print(f"   Versio ASCII guardada")
+    except:
+        print(f"   No s'ha pogut guardar")
 
 print("\n" + "=" * 80)
-print("✅ ANÀLISI DE CORRELACIÓ I SELECCIÓ COMPLETADA")
+print("OK CORRELACIO I SELECCIO COMPLETADA")
 print("=" * 80)
-print(f"\n📁 Fitxers generats:")
-print(f"   • {corr_file.name}")
-print(f"   • {corr_plot.name}")
-print(f"   • {reduced_file.name}")
-print(f"   • {matrix_plot.name}")
-print(f"   • {summary_file.name}")
-print(f"\n📂 Tots els fitxers a: {OUTPUT_DIR}")
-print(f"\n🎉 FASE 2 COMPLETADA!")
+print(f"\nFitxers generats:")
+print(f"   * {corr_file.name}")
+print(f"   * {corr_plot.name}")
+print(f"   * {red_file.name}")
+if (OUTPUT_DIR / "04_correlation_matrix_top9.png").exists():
+    print(f"   * 04_correlation_matrix_top9.png")
+if summary_file.exists() and summary_file.stat().st_size > 0:
+    print(f"   * {summary_file.name}")
+print(f"\nTots a: {OUTPUT_DIR}")
+print("\nFASE 2 COMPLETADA!")
 print("=" * 80 + "\n")
