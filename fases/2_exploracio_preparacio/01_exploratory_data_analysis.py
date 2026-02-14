@@ -109,11 +109,7 @@ else:
 print("\n[3/8] Identificant batches individuals...")
 
 # Identificar la columna de Batch ID
-batch_col = None
-for col in ['Batch_ref:Batch ref', 'Batch ID', 'Batch ref', 'Batch reference']:
-    if col in df.columns:
-        batch_col = col
-        break
+batch_col = ' 1-Raman spec recorded'
 
 if batch_col:
     print(f"✅ Columna de batch identificada: '{batch_col}'")

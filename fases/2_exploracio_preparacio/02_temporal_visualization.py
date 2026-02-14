@@ -42,11 +42,7 @@ except Exception as e:
     exit(1)
 
 # Identificar columnes amb cerca robusta
-batch_col = None
-for possible in ['Batch reference(Batch_ref:Batch ref)', 'Batch_ref:Batch ref', 'Batch ID']:
-    if possible in df.columns:
-        batch_col = possible
-        break
+batch_col = ' 1-Raman spec recorded'
 
 if not batch_col:
     print("ERROR: No s'ha trobat columna de Batch!")

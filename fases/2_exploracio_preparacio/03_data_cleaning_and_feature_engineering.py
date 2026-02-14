@@ -27,7 +27,7 @@ df = pd.read_csv(DATA_DIR / "100_Batches_IndPenSim_V3.csv", low_memory=False)
 print(f"✅ Dataset carregat: {len(df):,} files")
 
 # Identificar columnes
-batch_col = 'Batch_ref:Batch ref' if 'Batch_ref:Batch ref' in df.columns else 'Batch ID'
+batch_col = ' 1-Raman spec recorded'
 time_col = 'Time (h)'
 
 print(f"\n[2/6] Netejant i processant dades...")
