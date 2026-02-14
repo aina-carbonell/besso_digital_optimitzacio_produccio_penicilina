@@ -1,0 +1,39 @@
+================================================================================
+RESUM SELECCIO DE CARACTERISTIQUES
+================================================================================
+
+9 VARIABLES SELECCIONADES:
+
+   1. cumulative_penicillin          (r = +0.995)
+   2. substrate                      (r = -0.078)
+   3. RQ                             (r = +0.078)
+   4. specific_production_rate       (r = -0.138)
+   5. substrate_rate                 (r = +0.081)
+   6. base_flow                      (r = -0.122)
+   7. DO                             (r = -0.330)
+   8. OUR                            (r = +0.257)
+   9. viscosity                      (r = +0.787)
+
+================================================================================
+
+JUSTIFICACIO TEORICA:
+
+   * cumulative_penicillin: Produccio acumulada
+   * substrate: Control limitacio substrat
+   * RQ: Estat metabolic
+   * specific_production_rate: Velocitat biosintesi
+   * DO: Metabolisme aerobic
+   * OUR: Activitat metabolica
+
+================================================================================
+
+ESTADISTIQUES:
+
+Correlacio positiva (>0.5):
+   * cumulative_penicillin: r = 0.995
+   * viscosity: r = 0.787
+
+Correlacio negativa (<-0.5):
+   (Cap)
+
+================================================================================
