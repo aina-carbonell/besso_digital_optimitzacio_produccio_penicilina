@@ -127,7 +127,7 @@ expected_outputs = [
     "03_xgboost_model.pkl",
     "04_lstm_model.h5",
     "06_metrics_summary.csv",
-    "_RESUM_FINAL.txt"
+    "FASE3_RESUM_FINAL.txt"
 ]
 
 print(f"\nVerificant fitxers...")
