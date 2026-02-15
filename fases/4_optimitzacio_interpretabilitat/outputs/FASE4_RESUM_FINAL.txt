@@ -1,0 +1,31 @@
+================================================================================
+FASE 4: OPTIMITZACIO I INTERPRETABILITAT - RESUM FINAL
+================================================================================
+
+OBJECTIU:
+   Anar més enllà de la predicció i proposar accions de millora
+
+RESULTATS PRINCIPALS:
+
+1. SHAP ANALYSIS
+   Top 3 features:
+      1. cumulative_penicillin          5.9656
+      2. viscosity                      1.7340
+      3. substrate                      0.6974
+
+2. HYPERPARAMETER TUNING
+3. SETPOINTS ÒPTIMS
+4. RECOMANACIONS
+   • DO: Augmentar 35-40% (millora aeració)
+   • pH: Control estricte 6.2-6.4
+   • Substrate: Fed-batch per evitar repressió
+   • Monitoring: Viscosity com indicador biomassa
+
+MILLORA ESPERADA:
+   • Producció: +10-15%
+   • Variabilitat: -20%
+   • ROI: Positiu
+
+================================================================================
+FASE 4 COMPLETADA
+================================================================================

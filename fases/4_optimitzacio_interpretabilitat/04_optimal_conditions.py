@@ -20,71 +20,116 @@ warnings.filterwarnings('ignore')
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 FASE3_OUT = PROJECT_ROOT / "fases" / "3_modelitzacio_predictiva" / "outputs"
 OUTPUT_DIR = PROJECT_ROOT / "fases" / "4_optimitzacio_interpretabilitat" / "outputs"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 print("=" * 80)
 print("FASE 4.4 - CONDICIONS ÒPTIMES")
 print("=" * 80)
 
-# Carregar dades i model
+# =============================================================================
+# FUNCIÓ PER PDP MANUAL (alternativa a sklearn)
+# =============================================================================
+def plot_pdp_manual(model, X, feature_names, feature_name, ax):
+    """Calcula PDP manualment per evitar problemes amb sklearn"""
+    
+    if feature_name not in feature_names:
+        print(f"   ⚠ Feature {feature_name} no trobada, saltant...")
+        return None, None
+    
+    feat_idx = feature_names.index(feature_name)
+    
+    # Crear grid de valors (percentils 5-95 per evitar extrapolació)
+    min_val = np.percentile(X[:, feat_idx], 5)
+    max_val = np.percentile(X[:, feat_idx], 95)
+    values = np.linspace(min_val, max_val, 50)
+    
+    # Calcular PDP
+    avg_predictions = []
+    X_baseline = X[:500].copy()  # Usar 500 mostres
+    
+    for val in values:
+        X_temp = X_baseline.copy()
+        X_temp[:, feat_idx] = val
+        preds = model.predict(X_temp)
+        avg_predictions.append(np.mean(preds))
+    
+    # Plot
+    ax.plot(values, avg_predictions, 'b-', linewidth=2)
+    
+    # Marcar òptim
+    optimal_idx = np.argmax(avg_predictions)
+    optimal_val = values[optimal_idx]
+    optimal_pred = avg_predictions[optimal_idx]
+    
+    ax.axvline(optimal_val, color='red', linestyle='--', lw=2,
+               label=f'Òptim: {optimal_val:.2f}')
+    ax.scatter([optimal_val], [optimal_pred], color='red', s=100, zorder=5)
+    
+    ax.set_xlabel(feature_name, fontsize=11)
+    ax.set_ylabel('Penicil·lina parcial (g/L)', fontsize=11)
+    ax.set_title(f'Partial Dependence - {feature_name}', fontweight='bold')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    return optimal_val, optimal_pred
+
+# =============================================================================
+# CARREGAR DADES I MODEL
+# =============================================================================
 print("\n[1/5] Carregant model optimitzat...")
-df_train = pd.read_csv(FASE3_OUT / "train_data.csv")
+
+try:
+    df_train = pd.read_csv(FASE3_OUT / "train_data.csv")
+    print(f"   ✅ Train dataset carregat: {df_train.shape}")
+except Exception as e:
+    print(f"   ❌ Error carregant train_data.csv: {e}")
+    exit(1)
+
 feature_cols = [c for c in df_train.columns if c not in ['batch_id', 'penicillin', 'time']]
+print(f"   📊 Features detectades: {len(feature_cols)}")
 
 # Intentar carregar model optimitzat, sinó usar original
 try:
     xgb_data = joblib.load(OUTPUT_DIR / "03_xgboost_optimized.pkl")
+    print("   ✅ Model optimitzat carregat")
 except:
-    xgb_data = joblib.load(FASE3_OUT / "03_xgboost_model.pkl")
+    try:
+        xgb_data = joblib.load(FASE3_OUT / "03_xgboost_model.pkl")
+        print("   ✅ Model original carregat")
+    except Exception as e:
+        print(f"   ❌ Error carregant model: {e}")
+        exit(1)
 
 model = xgb_data['model']
 
 # Estadístiques features (per constraints)
 print("\n[2/5] Calculant rangs operacionals...")
 feature_stats = df_train[feature_cols].describe()
+print(f"   ✅ Rangs calculats per a {len(feature_cols)} variables")
 
 # =============================================================================
-# PARTIAL DEPENDENCE PLOTS
+# PARTIAL DEPENDENCE PLOTS (VERSIÓ MANUAL)
 # =============================================================================
-print("\n[3/5] Generant Partial Dependence Plots...")
+print("\n[3/5] Generant Partial Dependence Plots (manual)...")
 
-from sklearn.inspection import partial_dependence
-
-# Top 4 features (exclloent cumulative_penicillin)
-top_features = ['viscosity', 'DO', 'substrate', 'OUR']
+# Top features per analitzar (excloent cumulative_penicillin)
+top_features = ['viscosity', 'DO', 'substrate', 'OUR', 'specific_production_rate', 'substrate_rate']
 top_features = [f for f in top_features if f in feature_cols][:4]
 
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 axes = axes.flatten()
 
+X_sample = df_train[feature_cols].values[:1000]  # Mostra per PDP
+
 for i, feat in enumerate(top_features):
-    feat_idx = feature_cols.index(feat)
-    
-    # Calcular PDP
-    pdp_result = partial_dependence(
-        model, df_train[feature_cols].values[:1000], [feat_idx],
-        kind='average'
-    )
-    
-    ax = axes[i]
-    ax.plot(pdp_result['values'][0], pdp_result['average'][0], 'b-', linewidth=2)
-    
-    # Marcar valor òptim
-    optimal_idx = np.argmax(pdp_result['average'][0])
-    optimal_val = pdp_result['values'][0][optimal_idx]
-    optimal_pred = pdp_result['average'][0][optimal_idx]
-    
-    ax.axvline(optimal_val, color='red', linestyle='--', lw=2, label=f'Òptim: {optimal_val:.2f}')
-    ax.scatter([optimal_val], [optimal_pred], color='red', s=100, zorder=5)
-    
-    ax.set_xlabel(feat, fontsize=11)
-    ax.set_ylabel('Penicil·lina parcial (g/L)', fontsize=11)
-    ax.set_title(f'Partial Dependence - {feat}', fontweight='bold')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    print(f"   📈 Generant PDP per {feat}...")
+    plot_pdp_manual(model, X_sample, feature_cols, feat, axes[i])
 
 plt.tight_layout()
-plt.savefig(OUTPUT_DIR / "04_partial_dependence_plots.png", dpi=300, bbox_inches='tight')
+pdp_path = OUTPUT_DIR / "04_partial_dependence_plots.png"
+plt.savefig(pdp_path, dpi=300, bbox_inches='tight')
 plt.close()
+print(f"   ✅ Partial Dependence Plots guardats: {pdp_path.name}")
 
 # =============================================================================
 # OPTIMITZACIÓ
@@ -93,32 +138,40 @@ print("\n[4/5] Optimitzant setpoints...")
 
 # Definir bounds (basat en percentils 5-95 de training data)
 bounds = []
+feature_bounds = {}
+
 for feat in feature_cols:
     if feat == 'cumulative_penicillin':
         # Fixar a valor mig (no controlable directament)
-        bounds.append((df_train[feat].median(), df_train[feat].median()))
+        median_val = df_train[feat].median()
+        bounds.append((median_val, median_val))
+        feature_bounds[feat] = {'min': median_val, 'max': median_val}
     else:
         lower = df_train[feat].quantile(0.05)
         upper = df_train[feat].quantile(0.95)
         bounds.append((lower, upper))
+        feature_bounds[feat] = {'min': lower, 'max': upper}
+
+print(f"   ✅ Bounds definits per a {len(bounds)} variables")
 
 # Funció objectiu (maximitzar predicció)
 def objective(x):
     return -model.predict(x.reshape(1, -1))[0]
 
 # Optimització amb differential evolution
+print("   🔄 Executant optimització (pot trigar 1-2 minuts)...")
 result = differential_evolution(
     objective,
     bounds,
     maxiter=100,
     seed=42,
-    workers=-1
+    workers=1  # Evitar problemes de multiprocessing a Windows
 )
 
 optimal_features = result.x
 optimal_production = -result.fun
 
-print(f"\n   Producció òptima esperada: {optimal_production:.2f} g/L")
+print(f"\n   ✅ Producció òptima esperada: {optimal_production:.2f} g/L")
 
 # =============================================================================
 # SETPOINTS RECOMANATS
@@ -136,50 +189,68 @@ setpoints = pd.DataFrame({
     'Variable': feature_cols,
     'Baseline': baseline_features,
     'Optimal': optimal_features,
-    'Change_%': ((optimal_features - baseline_features) / baseline_features) * 100
+    'Change_%': ((optimal_features - baseline_features) / np.abs(baseline_features)) * 100
 })
 
-# Filtrar només variables controlables (canvi significatiu)
-setpoints['Controllable'] = np.abs(setpoints['Change_%']) > 1
+# Afegir informació de bounds
+setpoints['Min_Bound'] = [feature_bounds[f]['min'] for f in feature_cols]
+setpoints['Max_Bound'] = [feature_bounds[f]['max'] for f in feature_cols]
+setpoints['Within_Bounds'] = (setpoints['Optimal'] >= setpoints['Min_Bound']) & (setpoints['Optimal'] <= setpoints['Max_Bound'])
+
+# Filtrar només variables amb canvi significatiu i dins dels bounds
+setpoints['Controllable'] = (np.abs(setpoints['Change_%']) > 5) & setpoints['Within_Bounds']
 setpoints_ctrl = setpoints[setpoints['Controllable']].sort_values('Change_%', key=abs, ascending=False)
 
-print("\n   === SETPOINTS RECOMANATS ===")
+print("\n   === SETPOINTS RECOMANATS (canvi >5%) ===")
 print(setpoints_ctrl[['Variable', 'Baseline', 'Optimal', 'Change_%']].to_string(index=False))
 
 # Guardar
 setpoints.to_csv(OUTPUT_DIR / "04_optimal_setpoints.csv", index=False)
+print(f"   ✅ Setpoints guardats: 04_optimal_setpoints.csv")
 
-# Visualització
+# =============================================================================
+# VISUALITZACIÓ
+# =============================================================================
+print("\n   📊 Generant visualitzacions...")
+
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
 # Plot 1: Comparació baseline vs òptim (top variables)
 ax = axes[0, 0]
 top_vars = setpoints_ctrl.head(6)
-x = np.arange(len(top_vars))
-width = 0.35
-
-ax.barh(x - width/2, top_vars['Baseline'], width, label='Baseline', 
-       color='lightblue', edgecolor='black')
-ax.barh(x + width/2, top_vars['Optimal'], width, label='Òptim',
-       color='lightgreen', edgecolor='black')
-
-ax.set_yticks(x)
-ax.set_yticklabels(top_vars['Variable'])
-ax.set_xlabel('Valor')
-ax.set_title('Setpoints: Baseline vs Òptim', fontweight='bold')
-ax.legend()
-ax.grid(True, alpha=0.3, axis='x')
+if len(top_vars) > 0:
+    x = np.arange(len(top_vars))
+    width = 0.35
+    
+    ax.barh(x - width/2, top_vars['Baseline'], width, label='Baseline', 
+           color='lightblue', edgecolor='black')
+    ax.barh(x + width/2, top_vars['Optimal'], width, label='Òptim',
+           color='lightgreen', edgecolor='black')
+    
+    ax.set_yticks(x)
+    ax.set_yticklabels(top_vars['Variable'])
+    ax.set_xlabel('Valor')
+    ax.set_title('Setpoints: Baseline vs Òptim', fontweight='bold')
+    ax.legend()
+    ax.grid(True, alpha=0.3, axis='x')
+else:
+    ax.text(0.5, 0.5, 'No hi ha variables amb canvi significatiu', 
+            ha='center', va='center', transform=ax.transAxes)
 
 # Plot 2: % Change
 ax = axes[0, 1]
-colors = ['green' if c > 0 else 'red' for c in top_vars['Change_%']]
-ax.barh(x, top_vars['Change_%'], color=colors, edgecolor='black', alpha=0.7)
-ax.set_yticks(x)
-ax.set_yticklabels(top_vars['Variable'])
-ax.set_xlabel('Canvi (%)')
-ax.set_title('Canvi Recomanat (%)', fontweight='bold')
-ax.axvline(0, color='black', lw=1)
-ax.grid(True, alpha=0.3, axis='x')
+if len(top_vars) > 0:
+    colors = ['green' if c > 0 else 'red' for c in top_vars['Change_%']]
+    ax.barh(x, top_vars['Change_%'], color=colors, edgecolor='black', alpha=0.7)
+    ax.set_yticks(x)
+    ax.set_yticklabels(top_vars['Variable'])
+    ax.set_xlabel('Canvi (%)')
+    ax.set_title('Canvi Recomanat (%)', fontweight='bold')
+    ax.axvline(0, color='black', lw=1)
+    ax.grid(True, alpha=0.3, axis='x')
+else:
+    ax.text(0.5, 0.5, 'No hi ha variables amb canvi significatiu', 
+            ha='center', va='center', transform=ax.transAxes)
 
 # Plot 3: Expected improvement
 ax = axes[1, 0]
@@ -222,9 +293,10 @@ for i, row in top_vars.head(3).iterrows():
 summary_text += f"""
 
 INTERPRETACIÓ:
-• DO: Augmentar millora aeració
-• Substrate: Fed-batch control
-• Viscosity: Indicador biomassa
+• DO: Control d'oxigen per metabolisme aeròbic
+• Substrate: Estratègia fed-batch òptima
+• Viscosity: Relacionada amb concentració de biomassa
+• OUR: Activitat metabòlica del cultiu
 """
 
 ax.text(0.1, 0.9, summary_text, transform=ax.transAxes,
@@ -232,12 +304,26 @@ ax.text(0.1, 0.9, summary_text, transform=ax.transAxes,
        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
 plt.tight_layout()
-plt.savefig(OUTPUT_DIR / "04_optimization_summary.png", dpi=300, bbox_inches='tight')
+summary_path = OUTPUT_DIR / "04_optimization_summary.png"
+plt.savefig(summary_path, dpi=300, bbox_inches='tight')
 plt.close()
+print(f"   ✅ Visualització guardada: {summary_path.name}")
 
+# =============================================================================
+# RESUM FINAL
+# =============================================================================
 print("\n" + "=" * 80)
 print("OPTIMAL CONDITIONS COMPLETAT")
 print("=" * 80)
-print(f"\nMillora esperada: +{improvement_pct:.1f}%")
-print("\nSegüent: python 05_sensitivity_analysis.py")
+print(f"\n📊 RESULTATS:")
+print(f"   Producció baseline: {baseline_production:.2f} g/L")
+print(f"   Producció òptima:   {optimal_production:.2f} g/L")
+print(f"   Millora esperada:   +{improvement_pct:.1f}%")
+
+print(f"\n📁 FITXERS GENERATS:")
+print(f"   • 04_partial_dependence_plots.png")
+print(f"   • 04_optimal_setpoints.csv")
+print(f"   • 04_optimization_summary.png")
+
+print(f"\n🚀 Següent: python 05_sensitivity_analysis.py")
 print("=" * 80 + "\n")
