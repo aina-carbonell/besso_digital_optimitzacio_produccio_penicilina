@@ -1,6 +1,6 @@
 {
   "rf": {
-    "max_depth": 20,
+    "max_depth": 25,
     "max_features": "sqrt",
     "min_samples_split": 5,
     "n_estimators": 300
@@ -9,6 +9,6 @@
     "learning_rate": 0.1,
     "max_depth": 9,
     "n_estimators": 300,
-    "subsample": 0.8
+    "subsample": 0.9
   }
 }

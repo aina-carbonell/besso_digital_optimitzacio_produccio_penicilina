@@ -9,12 +9,22 @@ RESULTATS PRINCIPALS:
 
 1. SHAP ANALYSIS
    Top 3 features:
-      1. cumulative_penicillin          5.9656
-      2. viscosity                      1.7340
-      3. substrate                      0.6974
+      1. cumulative_penicillin          5.8610
+      2. viscosity                      1.7084
+      3. substrate                      0.6966
 
 2. HYPERPARAMETER TUNING
+   Millor model: XGB_grid
+   MAE: 0.3192 g/L
+   R²: 0.9966
+
 3. SETPOINTS ÒPTIMS
+   cumulative_penicillin          ↑ +5.5%
+   substrate                      ↑ +519.1%
+   RQ                             ↓ -39.0%
+   specific_production_rate       ↓ -172.0%
+   substrate_rate                 ↑ +413.6%
+
 4. RECOMANACIONS
    • DO: Augmentar 35-40% (millora aeració)
    • pH: Control estricte 6.2-6.4
