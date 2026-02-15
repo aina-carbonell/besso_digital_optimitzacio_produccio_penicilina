@@ -1,0 +1,9 @@
+{
+  "Total_Batches": 10,
+  "Mean_Production": 10.552140373386552,
+  "Std_Production": 8.47915385746886,
+  "Mean_Error": 0.3191991531187031,
+  "Anomaly_Rate": 0.0500650759219089,
+  "Best_Batch": 98,
+  "Worst_Batch": 91
+}
