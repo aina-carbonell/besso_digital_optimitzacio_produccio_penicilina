@@ -1,0 +1,93 @@
+================================================================================
+FASE 3: MODELITZACIO PREDICTIVA - RESUM FINAL
+================================================================================
+
+OBJECTIU:
+   Desenvolupar models predictius per concentracio de penicil.lina
+   amb 3 nivells de complexitat i deteccio de falles.
+
+DATASET:
+   Train: Batches 1-90 (operacio normal)
+   Test:  Batches 91-100 (amb falles)
+   Features: 9 variables top (Fase 2)
+   Target: penicillin (g/L)
+
+================================================================================
+RESULTATS PER MODEL
+================================================================================
+
+Ridge:
+   Train - R2: 0.9932, MAE: 0.5693 g/L
+   Test  - R2: 0.9920, MAE: 0.5698 g/L
+
+Random Forest:
+   Train - R2: 0.9999, MAE: 0.0527 g/L
+   Test  - R2: 0.9913, MAE: 0.5448 g/L
+
+XGBoost:
+   Train - R2: 0.9997, MAE: 0.1165 g/L
+   Test  - R2: 0.9932, MAE: 0.4793 g/L
+
+LSTM:
+   Train - R2: 0.9985, MAE: 0.2658 g/L
+   Test  - R2: 0.9569, MAE: 0.6263 g/L
+
+================================================================================
+RANKING FINAL (Test Set)
+================================================================================
+
+1. XGBoost
+   R2: 0.9932, MAE: 0.4793, RMSE: 0.7008
+   Ranking mitja: 1.00
+
+2. Ridge
+   R2: 0.9920, MAE: 0.5698, RMSE: 0.7588
+   Ranking mitja: 2.33
+
+3. Random Forest
+   R2: 0.9913, MAE: 0.5448, RMSE: 0.7889
+   Ranking mitja: 2.67
+
+4. LSTM
+   R2: 0.9569, MAE: 0.6263, RMSE: 1.7515
+   Ranking mitja: 4.00
+
+================================================================================
+MILLOR MODEL
+================================================================================
+
+Model: XGBoost
+   R2 Test:   0.9932
+   MAE Test:  0.4793 g/L
+   RMSE Test: 0.7008 g/L
+
+================================================================================
+FAULT DETECTION
+================================================================================
+
+Batches analitzats: 91-100 (10 batches amb falles)
+Anomalies detectades (Consensus): 43.7%
+Batch mes problematic: 0
+   75.4% anomalies
+
+================================================================================
+FITXERS GENERATS
+================================================================================
+
+   * 01_train_test_split_visualization.png
+   * 02_ridge_model.pkl
+   * 02_ridge_results.png
+   * 03_random_forest_model.pkl
+   * 03_xgboost_model.pkl
+   * 03_ensemble_results.png
+   * 03_feature_importance.png
+   * 04_lstm_model.h5
+   * 04_lstm_results.png
+   * 05_fault_detection_results.png
+   * 05_fault_detection_scores.csv
+   * 06_model_comparison.png
+   * 06_metrics_summary.csv
+
+================================================================================
+FASE 3 COMPLETADA
+================================================================================

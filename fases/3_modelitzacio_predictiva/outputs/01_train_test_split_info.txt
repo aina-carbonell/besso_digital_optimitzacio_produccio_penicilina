@@ -1,0 +1,32 @@
+================================================================================
+INFORMACIO DEL SPLIT TRAIN/TEST
+================================================================================
+
+TRAIN SET:
+   Batches: 1-90
+   Total mostres: 102,410
+   Batches unics: 90
+   Target mean: 14.760 g/L
+   Target std: 9.994 g/L
+
+TEST SET (AMB FALLES):
+   Batches: 91-100
+   Total mostres: 11,525
+   Batches unics: 10
+   Target mean: 10.552 g/L
+   Target std: 8.479 g/L
+
+FEATURES (9):
+   1. cumulative_penicillin
+   2. substrate
+   3. RQ
+   4. specific_production_rate
+   5. substrate_rate
+   6. base_flow
+   7. DO
+   8. OUR
+   9. viscosity
+
+TARGET: penicillin
+
+================================================================================
