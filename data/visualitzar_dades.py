@@ -1,14 +1,12 @@
 import pandas as pd
 from datetime import datetime
 
-# 🔧 CONFIGURACIÓ - CANVIA EL NOM DEL TEU FITXER
-NOM_FITXER = "100_Batches_IndPenSim_V3.csv"  # 👈 POSA AQUÍ EL NOM DEL TEU FITXER
-NOM_SORTIDA = "analisi_dataset.txt"  # Nom del fitxer de sortida
+NOM_FITXER = "100_Batches_IndPenSim_V3.csv"
+NOM_SORTIDA = "analisi_dataset.txt"
 
 print(f"📁 Processant {NOM_FITXER}...")
 
 try:
-    # Carregar el fitxer segons l'extensió
     if NOM_FITXER.endswith('.csv'):
         df = pd.read_csv(NOM_FITXER)
     elif NOM_FITXER.endswith(('.xls', '.xlsx')):
@@ -16,10 +14,8 @@ try:
     else:
         df = pd.read_csv(NOM_FITXER, sep=None, engine='python')
     
-    # OBRIR FITXER PER ESCRIURE
     with open(NOM_SORTIDA, 'w', encoding='utf-8') as f:
         
-        # CAPÇALERA
         f.write("=" * 80 + "\n")
         f.write(f"ANÀLISI DE DATASET\n")
         f.write(f"Generat: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
