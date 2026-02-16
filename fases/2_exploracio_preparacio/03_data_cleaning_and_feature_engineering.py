@@ -2,13 +2,15 @@
 """
 ==================================================================================
 FASE 2: NETEJA DE DADES I ENGINYERIA DE CARACTERÍSTIQUES
-Generació del dataset final amb 33 columnes
+Generació del dataset final amb 33 columnes i visualitzacions
 ==================================================================================
 """
 
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -17,12 +19,18 @@ DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = PROJECT_ROOT / "fases" / "2_exploracio_preparacio" / "outputs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Configuració de visualització
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
+plt.rcParams['figure.figsize'] = (16, 10)
+plt.rcParams['font.size'] = 11
+
 print("=" * 80)
 print("FASE 2: NETEJA DE DADES I ENGINYERIA DE CARACTERÍSTIQUES")
 print("=" * 80)
 
 # Carregar dades
-print("\n[1/6] Carregant dataset...")
+print("\n[1/7] Carregant dataset...")
 df = pd.read_csv(DATA_DIR / "100_Batches_IndPenSim_V3.csv", low_memory=False)
 print(f"✅ Dataset carregat: {len(df):,} files")
 
@@ -30,7 +38,7 @@ print(f"✅ Dataset carregat: {len(df):,} files")
 batch_col = ' 1-Raman spec recorded'
 time_col = 'Time (h)'
 
-print(f"\n[2/6] Netejant i processant dades...")
+print(f"\n[2/7] Netejant i processant dades...")
 
 # Crear dataset base amb variables originals
 df_clean = pd.DataFrame()
@@ -65,7 +73,7 @@ for old_col, new_col in column_mapping.items():
 
 print(f"✅ Columnes bàsiques extretes: {len(df_clean.columns)}")
 
-print(f"\n[3/6] Generant variables derivades...")
+print(f"\n[3/7] Generant variables derivades...")
 
 # Convertir temperatura de Kelvin a Celsius si és necessari
 if 'temperature' in df_clean.columns:
@@ -92,7 +100,7 @@ if 'viscosity' not in df_clean.columns and 'biomass' in df_clean.columns:
     print("   ✅ Viscositat estimada")
 
 # 19-21. Taxes de canvi (derivades temporals) per batch
-print(f"\n[4/6] Calculant taxes de canvi temporal...")
+print(f"\n[4/7] Calculant taxes de canvi temporal...")
 
 rate_vars = []
 if 'biomass' in df_clean.columns:
@@ -132,7 +140,7 @@ if 'penicillin_rate' in df_clean.columns and 'biomass' in df_clean.columns:
     print("   ✅ Velocitat específica de producció calculada")
 
 # 24-25. Rendiments acumulats per batch
-print(f"\n[5/6] Calculant rendiments...")
+print(f"\n[5/7] Calculant rendiments...")
 
 if 'penicillin' in df_clean.columns and 'biomass' in df_clean.columns:
     df_clean['yield_PX'] = df_clean['penicillin'] / (df_clean['biomass'] + 1e-10)
@@ -198,7 +206,7 @@ df_clean['raman_PC2'] = 0.0
 df_clean['raman_PC3'] = 0.0
 print("   ℹ️  Components Raman (placeholder - requereix PCA separat)")
 
-print(f"\n[6/6] Finalitzant dataset...")
+print(f"\n[6/7] Finalitzant dataset...")
 
 # Ordenar columnes en l'ordre desitjat
 final_columns_order = [
@@ -243,8 +251,108 @@ df_stats = df_final.describe().T
 df_stats.to_csv(stats_file)
 print(f"\n   📈 Estadístiques guardades: {stats_file.name}")
 
+# =============================================================================
+# GENERAR BOXPLOT DE TOTES LES VARIABLES NUMÈRIQUES
+# =============================================================================
+print(f"\n[7/7] Generant boxplot de variables numèriques...")
+
+# Seleccionar variables numèriques (excloent batch_id i time)
+numeric_vars = [col for col in df_final.columns if col not in ['batch_id', 'time']]
+
+# Crear figura amb subplots (múltiples boxplots en una graella)
+n_vars = len(numeric_vars)
+n_cols = 4  # 4 columnes
+n_rows = (n_vars + n_cols - 1) // n_cols  # Calcular files necessàries
+
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, n_rows * 5))
+axes = axes.flatten()  # Aplanar per iterar fàcilment
+
+# Normalitzar cada variable per visualitzar-les juntes (z-score)
+df_normalized = df_final[numeric_vars].copy()
+for col in df_normalized.columns:
+    if df_normalized[col].std() > 0:  # Evitar divisió per zero
+        df_normalized[col] = (df_normalized[col] - df_normalized[col].mean()) / df_normalized[col].std()
+
+# Crear boxplot per cada variable
+for i, var in enumerate(numeric_vars):
+    ax = axes[i]
+    
+    # Dades originals (sense normalitzar) per mostrar valors reals
+    data = df_final[var].dropna()
+    
+    # Boxplot amb estil millorat
+    bp = ax.boxplot(data, patch_artist=True, showmeans=True, meanline=True,
+                    meanprops=dict(color='red', linewidth=2, linestyle='--'),
+                    medianprops=dict(color='black', linewidth=2),
+                    whiskerprops=dict(color='gray', linewidth=1.5),
+                    capprops=dict(color='gray', linewidth=1.5),
+                    flierprops=dict(marker='o', markerfacecolor='orange', 
+                                    markersize=3, alpha=0.5, markeredgecolor='orange'))
+    
+    # Color del box
+    bp['boxes'][0].set_facecolor(plt.cm.viridis(i / len(numeric_vars)))
+    bp['boxes'][0].set_alpha(0.7)
+    
+    # Afegir estadístiques com a text
+    stats = data.describe()
+    ax.text(0.95, 0.95, f"μ={stats['mean']:.2f}\nσ={stats['std']:.2f}",
+            transform=ax.transAxes, ha='right', va='top',
+            fontsize=8, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    ax.set_title(var, fontweight='bold', fontsize=10)
+    ax.set_ylabel('Valor', fontsize=8)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_xticks([])  # Treure etiquetes de l'eix X
+
+# Ocultar subplots sobrants
+for j in range(i+1, len(axes)):
+    axes[j].axis('off')
+
+plt.suptitle('BOXPLOTS DE TOTES LES VARIABLES NUMÈRIQUES', 
+             fontsize=16, fontweight='bold', y=0.98)
+plt.tight_layout()
+
+# Guardar boxplot
+boxplot_path = OUTPUT_DIR / "03_all_variables_boxplot.png"
+plt.savefig(boxplot_path, dpi=300, bbox_inches='tight')
+plt.close()
+
+print(f"   ✅ Boxplot guardat: {boxplot_path.name}")
+
+# Opcional: Boxplot compacte amb totes les variables normalitzades
+print(f"\n   Generant boxplot compacte (variables normalitzades)...")
+
+fig, ax = plt.subplots(figsize=(16, 10))
+
+# Ordenar variables per mediana per millor visualització
+order = df_normalized.median().sort_values().index
+
+# Boxplot de totes juntes (normalitzades)
+df_normalized[order].boxplot(ax=ax, rot=90, grid=False, patch_artist=True,
+                             boxprops=dict(alpha=0.7, color='blue'),
+                             medianprops=dict(color='red', linewidth=2),
+                             flierprops=dict(marker='o', markersize=2, alpha=0.3))
+
+ax.set_title('Distribució de Variables (Normalitzades)', fontsize=14, fontweight='bold')
+ax.set_ylabel('Z-Score', fontsize=12)
+ax.set_xlabel('Variable', fontsize=12)
+ax.grid(True, alpha=0.3, axis='y')
+ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+
+plt.tight_layout()
+compact_path = OUTPUT_DIR / "03_variables_boxplot_compact.png"
+plt.savefig(compact_path, dpi=300, bbox_inches='tight')
+plt.close()
+
+print(f"   ✅ Boxplot compacte guardat: {compact_path.name}")
+
 print("\n" + "=" * 80)
 print("✅ NETEJA I ENGINYERIA DE CARACTERÍSTIQUES COMPLETADA")
 print("=" * 80)
+print(f"\n📁 Fitxers generats:")
+print(f"   • 03_penicillin_dataset_33_columns.csv")
+print(f"   • 03_dataset_statistics.csv")
+print(f"   • 03_all_variables_boxplot.png")
+print(f"   • 03_variables_boxplot_compact.png")
 print(f"\n🚀 Següent pas: Executar '04_correlation_analysis.py'")
 print("=" * 80 + "\n")
