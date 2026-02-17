@@ -6,9 +6,9 @@ CONCLUSIONS TÈCNIQUES - ANÀLISI COMPLET
 1. MILLOR MODEL: XGBoost
 
 Mètriques:
-   R²:   0.9932 (99.32% variància explicada)
-   MAE:  0.4793 g/L (error absolut mig)
-   RMSE: 0.9966 g/L
+   R²:   0.9920 (99.32% variància explicada)
+   MAE:  0.4654 g/L (error absolut mig)
+   RMSE: 0.9960 g/L
 
 Per què és el millor?
 

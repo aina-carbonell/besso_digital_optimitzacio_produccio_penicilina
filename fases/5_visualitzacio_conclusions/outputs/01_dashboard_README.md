@@ -13,13 +13,13 @@ El dashboard és completament interactiu amb Plotly:
 
 ## 📈 KPIs Principals
 
-- **Batches analitzats**: 10
-- **Producció mitjana**: 10.55 g/L
-- **Desviació estàndard**: 8.48 g/L
-- **Error mitjà predicció**: 0.32 g/L
+- **Batches analitzats**: 20
+- **Producció mitjana**: 14.67 g/L
+- **Desviació estàndard**: 10.41 g/L
+- **Error mitjà predicció**: 0.40 g/L
 - **Taxa d'anomalies**: 5.0%
-- **Millor batch**: 98
-- **Pitjor batch**: 91
+- **Millor batch**: 29
+- **Pitjor batch**: 99
 
 ## 🎯 Components del Dashboard
 
