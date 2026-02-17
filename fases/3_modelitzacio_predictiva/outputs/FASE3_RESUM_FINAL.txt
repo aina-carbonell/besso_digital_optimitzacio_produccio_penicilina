@@ -17,58 +17,58 @@ RESULTATS PER MODEL
 ================================================================================
 
 Ridge:
-   Train - R2: 0.9932, MAE: 0.5693 g/L
-   Test  - R2: 0.9920, MAE: 0.5698 g/L
+   Train - R2: 0.9934, MAE: 0.5618 g/L
+   Test  - R2: 0.9928, MAE: 0.5584 g/L
 
 Random Forest:
-   Train - R2: 0.9999, MAE: 0.0527 g/L
-   Test  - R2: 0.9913, MAE: 0.5448 g/L
+   Train - R2: 0.9999, MAE: 0.0487 g/L
+   Test  - R2: 0.9872, MAE: 0.5316 g/L
 
 XGBoost:
-   Train - R2: 0.9997, MAE: 0.1165 g/L
-   Test  - R2: 0.9932, MAE: 0.4793 g/L
+   Train - R2: 0.9997, MAE: 0.1055 g/L
+   Test  - R2: 0.9920, MAE: 0.4654 g/L
 
 LSTM:
-   Train - R2: 0.9986, MAE: 0.2538 g/L
-   Test  - R2: 0.9829, MAE: 0.6019 g/L
+   Train - R2: 0.9928, MAE: 0.5295 g/L
+   Test  - R2: 0.9913, MAE: 0.6224 g/L
 
 ================================================================================
 RANKING FINAL (Test Set)
 ================================================================================
 
 1. XGBoost
-   R2: 0.9932, MAE: 0.4793, RMSE: 0.7008
-   Ranking mitja: 1.00
+   R2: 0.9920, MAE: 0.4654, RMSE: 0.9310
+   Ranking mitja: 1.67
 
 2. Ridge
-   R2: 0.9920, MAE: 0.5698, RMSE: 0.7588
-   Ranking mitja: 2.33
+   R2: 0.9928, MAE: 0.5584, RMSE: 0.8802
+   Ranking mitja: 1.67
 
 3. Random Forest
-   R2: 0.9913, MAE: 0.5448, RMSE: 0.7889
-   Ranking mitja: 2.67
+   R2: 0.9872, MAE: 0.5316, RMSE: 1.1758
+   Ranking mitja: 3.33
 
 4. LSTM
-   R2: 0.9829, MAE: 0.6019, RMSE: 1.1025
-   Ranking mitja: 4.00
+   R2: 0.9913, MAE: 0.6224, RMSE: 0.9604
+   Ranking mitja: 3.33
 
 ================================================================================
 MILLOR MODEL
 ================================================================================
 
 Model: XGBoost
-   R2 Test:   0.9932
-   MAE Test:  0.4793 g/L
-   RMSE Test: 0.7008 g/L
+   R2 Test:   0.9920
+   MAE Test:  0.4654 g/L
+   RMSE Test: 0.9310 g/L
 
 ================================================================================
 FAULT DETECTION
 ================================================================================
 
 Batches analitzats: 91-100 (10 batches amb falles)
-Anomalies detectades (Consensus): 43.7%
-Batch mes problematic: 0
-   75.4% anomalies
+Anomalies detectades (Consensus): 35.8%
+Batch mes problematic: 7
+   74.1% anomalies
 
 ================================================================================
 FITXERS GENERATS
